@@ -59,6 +59,28 @@ module.exports = function(Chart) {
 			}
 		},
 
+		// Insert an element into the quadtree. set the treeProxy member of the element.
+		insertElementIntoQuadTree: function(element, bounds) {
+			var treeProxy = element.treeProxy || {}; // reuse tree proxy elements to prevent GC lag
+			treeProxy.x = bounds.x;
+			treeProxy.y = bounds.y;
+			treeProxy.width = bounds.width,
+			treeProxy.height = bounds.height,
+			treeProxy.element = element
+			
+			this.chart.quadTree.insert(treeProxy);
+
+			// So we can look the item back up later
+			element.treeProxy = treeProxy;
+		},
+
+		// Removes the given element from the quadtree
+		removeElementFromQuadTree: function(element) {
+			if (element.treeProxy) {
+				this.chart.quadTree.remove(element.treeProxy);
+			}
+		},
+
 		// Controllers should implement the following
 		addElements: helpers.noop,
 		addElementAndReset: helpers.noop,

@@ -44,23 +44,22 @@
         var config = {
             type: 'line',
             data: {
-                labels: ["January", "February", "March", "April", "May", "June", "July"],
+                labels: [],
                 datasets: [{
                     label: "My First dataset",
-                    data: [randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor()],
+                    data: [],
                     fill: false,
                     borderDash: [5, 5],
                 }, {
-                    hidden: true,
-                    label: 'hidden dataset',
-                    data: [],
-                }, {
                     label: "My Second dataset",
-                    data: [randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor(), randomScalingFactor()],
+                    data: [],
                 }]
             },
             options: {
                 responsive: true,
+                animation: {
+                    duration: 0
+                },
                 tooltips: {
                     mode: 'label',
                     callbacks: {
@@ -88,7 +87,7 @@
                     }
                 },
                 hover: {
-                    mode: 'dataset'
+                    mode: 'single'
                 },
                 scales: {
                     xAxes: [{
@@ -121,7 +120,15 @@
             dataset.pointBorderWidth = 1;
         });
 
-        console.log(config.data);
+        $.each(config.data.datasets, function(i, dataset) { 
+            for (var i = 0; i < 1000; ++i) {
+                dataset.data.push(randomScalingFactor());
+            }
+        });
+
+        for (var i = 0; i < 1000; ++i) {
+            config.data.labels.push('label ' + i);
+        }
 
         window.onload = function() {
             var ctx = document.getElementById("canvas").getContext("2d");

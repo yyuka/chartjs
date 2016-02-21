@@ -37,6 +37,15 @@ module.exports = function(Chart) {
 				return false;
 			}
 		},
+		distanceToCenter: function(point) {
+			var vm = this._view;
+
+			if (vm) {
+				return Math.sqrt(Math.pow(point.x - vm.x, 2) + Math.pow(point.y - vm.y));
+			} else {
+				return NaN;
+			}
+		},
 		tooltipPosition: function() {
 			var vm = this._view;
 			return {

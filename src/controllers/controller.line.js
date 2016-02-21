@@ -58,8 +58,9 @@ module.exports = function(Chart) {
 			this.getDataset().metaData.splice(index, 0, point);
 
 			// Make sure bezier control points are updated
-			if (this.chart.options.showLines && this.chart.options.elements.line.tension !== 0)
+			if (this.chart.options.showLines && this.chart.options.elements.line.tension !== 0) {
 				this.updateBezierControlPoints();
+			}
 		},
 
 		update: function update(reset) {
@@ -193,6 +194,18 @@ module.exports = function(Chart) {
 			};
 
 			point._model.skip = point.custom && point.custom.skip ? point.custom.skip : (isNaN(point._model.x) || isNaN(point._model.y));
+
+			// Add to quadtree lookup
+			if (point._model.radius > 0) {
+				var r = point._model.radius + point._model.borderWidth;
+				this.removeElementFromQuadTree(point); // remove old quadtree point
+				this.insertElementIntoQuadTree(point, {
+					x: point._model.x - r,
+					y: point._model.y - r,
+					width: 2 * r,
+					height: 2 * r
+				});
+			}
 		},
 
 		calculatePointY: function(value, index, datasetIndex, isCombo) {

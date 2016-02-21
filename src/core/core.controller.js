@@ -1,5 +1,7 @@
 "use strict";
 
+var QuadTree = require("./core.quadtree.js");
+
 module.exports = function(Chart) {
 
 	var helpers = Chart.helpers;
@@ -17,6 +19,14 @@ module.exports = function(Chart) {
 	Chart.Controller = function(instance) {
 
 		this.chart = instance;
+
+		// Allocate new quadtree
+		this.quadTree = new QuadTree({
+			x: 0,
+			y: 0,
+			width: this.chart.width,
+			height: this.chart.height
+		});
 		this.config = instance.config;
 		this.options = this.config.options = helpers.configMerge(Chart.defaults.global, Chart.defaults[this.config.type], this.config.options || {});
 		this.id = helpers.uid();
@@ -92,6 +102,14 @@ module.exports = function(Chart) {
 			canvas.height = this.chart.height = newHeight;
 
 			helpers.retinaScale(this.chart);
+
+			this.quadTree.clear();
+			this.quadTree.resize({
+				x: 0,
+				y: 0,
+				width: newWidth,
+				height: newHeight
+			});
 
 			if (!silent) {
 				this.stop();
@@ -345,6 +363,43 @@ module.exports = function(Chart) {
 			var eventPosition = helpers.getRelativePosition(e, this.chart);
 			var elementsArray = [];
 
+			var size = 5; // pixels
+			var objects = this.quadTree.retrieve({
+				x: eventPosition.x - size,
+				y: eventPosition.y - size,
+				width: 2 * size,
+				height: 2 * size,
+			});
+
+			// get elements
+			objects = objects.map(function(object) {
+				return object.element;
+			});
+
+			helpers.each(objects, function(obj) {
+				// If this dataset is visible and in range, consider this objects
+				if (helpers.isDatasetVisible(this.data.datasets[obj._datasetIndex]) && obj.inRange(eventPosition.x, eventPosition.y)) {
+					elementsArray.push(obj);
+				}
+			}, this);
+
+			var sortByDistance = function(a, b) {
+				var dA = a.distanceToCenter(eventPosition);
+				var dB = b.distanceToCenter(eventPosition);
+
+				return dA - dB;
+			};
+
+			// sort by closest to point
+			elementsArray.sort(sortByDistance);
+
+			return elementsArray;
+		},
+
+		getElementsAtLabelFromEvent: function(e) {
+			var eventPosition = helpers.getRelativePosition(e, this.chart);
+			var elementsArray = [];
+
 			var found = (function() {
 				for (var i = 0; i < this.data.datasets.length; i++) {
 					if (helpers.isDatasetVisible(this.data.datasets[i])) {
@@ -439,8 +494,10 @@ module.exports = function(Chart) {
 					switch (mode) {
 						case 'single':
 							return _this.getElementAtEvent(e);
-						case 'label':
+						case 'near':
 							return _this.getElementsAtEvent(e);
+						case 'label':
+							return _this.getElementsAtLabelFromEvent(e);
 						case 'dataset':
 							return _this.getDatasetAtEvent(e);
 						default:
@@ -478,6 +535,7 @@ module.exports = function(Chart) {
 						break;
 					case 'label':
 					case 'dataset':
+					case 'near':
 						for (var i = 0; i < this.lastActive.length; i++) {
 							if (this.lastActive[i])
 								this.data.datasets[this.lastActive[i]._datasetIndex].controller.removeHoverStyle(this.lastActive[i], this.lastActive[i]._datasetIndex, this.lastActive[i]._index);
@@ -496,6 +554,7 @@ module.exports = function(Chart) {
 						break;
 					case 'label':
 					case 'dataset':
+					case 'near':
 						for (var j = 0; j < this.active.length; j++) {
 							if (this.active[j])
 								this.data.datasets[this.active[j]._datasetIndex].controller.setHoverStyle(this.active[j]);
