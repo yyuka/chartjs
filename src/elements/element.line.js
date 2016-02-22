@@ -154,7 +154,6 @@ module.exports = function(Chart) {
 				loopBackToStart();
 			}
 
-			ctx.closePath();
 			ctx.stroke();
 			ctx.restore();
 		}
