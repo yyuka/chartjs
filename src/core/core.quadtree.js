@@ -155,4 +155,6 @@ QuadTree.prototype.retrieve = function(rect) {
 	return matches;
 };
 
-module.exports = QuadTree;
+module.exports = function(Chart) {
+	Chart.QuadTree = QuadTree;
+};

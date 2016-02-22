@@ -173,7 +173,7 @@ describe('Line controller tests', function() {
 			ctx: mockContext,
 			options: verticalScaleConfig,
 			chart: {
-				data: data
+				data: data,
 			},
 			id: 'firstYScaleID'
 		});
@@ -253,7 +253,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -651,7 +657,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -818,7 +830,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -933,7 +951,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -1048,7 +1072,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -1156,7 +1186,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -1276,7 +1312,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);
@@ -1413,7 +1455,13 @@ describe('Line controller tests', function() {
 			scales: {
 				firstXScaleID: xScale,
 				firstYScaleID: yScale,
-			}
+			},
+			quadTree: new Chart.QuadTree({
+				x: 0,
+				y: 0,
+				width: 250,
+				height: 250
+			})
 		};
 
 		var controller = new Chart.controllers.line(chart, 0);

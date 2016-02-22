@@ -83,10 +83,11 @@ module.exports = function(Chart) {
 
 				switch (vm.pointStyle) {
 					// Default includes circle
-					default: ctx.beginPath();
-					ctx.arc(vm.x, vm.y, radius, 0, Math.PI * 2);
-					ctx.closePath();
-					ctx.fill();
+					default: 
+						ctx.beginPath();
+						ctx.arc(vm.x, vm.y, radius, 0, Math.PI * 2);
+						ctx.closePath();
+						ctx.fill();
 					break;
 					case 'triangle':
 							ctx.beginPath();

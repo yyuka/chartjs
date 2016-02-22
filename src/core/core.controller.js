@@ -1,7 +1,5 @@
 "use strict";
 
-var QuadTree = require("./core.quadtree.js");
-
 module.exports = function(Chart) {
 
 	var helpers = Chart.helpers;

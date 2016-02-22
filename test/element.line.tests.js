@@ -118,6 +118,9 @@ describe('Line element tests', function() {
 			name: 'bezierCurveTo',
 			args: [15, -10, 19, -5, 19, -5]
 		}, {
+			name: 'closePath',
+			args: []
+		}, {
 			name: 'stroke',
 			args: [],
 		}, {
@@ -274,6 +277,9 @@ describe('Line element tests', function() {
 			name: 'bezierCurveTo',
 			args: [15, -10, 19, -5, 19, -5]
 		}, {
+			name: 'closePath',
+			args: []
+		}, {
 			name: 'stroke',
 			args: [],
 		}, {
@@ -426,6 +432,9 @@ describe('Line element tests', function() {
 		}, {
  			name: 'moveTo',
  			args: [19, -5]
+		}, {
+			name: 'closePath',
+			args: []
 		}, {
 			name: 'stroke',
 			args: [],
@@ -582,6 +591,9 @@ describe('Line element tests', function() {
 			name: 'bezierCurveTo',
 			args: [19, -5, 0, 10, 0, 10]
 		}, {
+			name: 'closePath',
+			args: []
+		}, {
 			name: 'stroke',
 			args: [],
 		}, {
@@ -737,6 +749,9 @@ describe('Line element tests', function() {
 			name: 'bezierCurveTo',
 			args: [19, -5, 0, 10, 0, 10]
 		}, {
+			name: 'closePath',
+			args: []
+		}, {
 			name: 'stroke',
 			args: [],
 		}, {
@@ -885,6 +900,9 @@ describe('Line element tests', function() {
 		}, {
 			name: 'bezierCurveTo',
 			args: [15, -10, 19, -5, 19, -5]
+		}, {
+			name: 'closePath',
+			args: []
 		}, {
 			name: 'stroke',
 			args: [],
@@ -1037,6 +1055,9 @@ describe('Line element tests', function() {
 		}, {
 			name: 'moveTo',
 			args: [19, -5]
+		}, {
+			name: 'closePath',
+			args: []
 		}, {
 			name: 'stroke',
 			args: [],
