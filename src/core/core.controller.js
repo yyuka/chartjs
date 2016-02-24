@@ -19,7 +19,7 @@ module.exports = function(Chart) {
 		this.chart = instance;
 
 		// Allocate new quadtree
-		this.quadTree = new QuadTree({
+		this.quadTree = new Chart.QuadTree({
 			x: 0,
 			y: 0,
 			width: this.chart.width,
@@ -339,22 +339,8 @@ module.exports = function(Chart) {
 		// Get the single element that was clicked on
 		// @return : An object containing the dataset index and element index of the matching element. Also contains the rectangle that was draw
 		getElementAtEvent: function(e) {
-
-			var eventPosition = helpers.getRelativePosition(e, this.chart);
-			var elementsArray = [];
-
-			helpers.each(this.data.datasets, function(dataset, datasetIndex) {
-				if (helpers.isDatasetVisible(dataset)) {
-					helpers.each(dataset.metaData, function(element, index) {
-						if (element.inRange(eventPosition.x, eventPosition.y)) {
-							elementsArray.push(element);
-							return elementsArray;
-						}
-					});
-				}
-			});
-
-			return elementsArray;
+			var elements = this.getElementsAtEvent(e);
+			return elements.length ? [elements[0]] : [];
 		},
 
 		getElementsAtEvent: function(e) {
@@ -424,13 +410,8 @@ module.exports = function(Chart) {
 		},
 
 		getDatasetAtEvent: function(e) {
-			var elementsArray = this.getElementAtEvent(e);
-
-			if (elementsArray.length > 0) {
-				elementsArray = this.data.datasets[elementsArray[0]._datasetIndex].metaData;
-			}
-
-			return elementsArray;
+			var elements = this.getElementsAtEvent(e);
+			return elements.length ? this.data.datasets[elements[0]._datasetIndex].metaData : [];
 		},
 
 		generateLegend: function generateLegend() {

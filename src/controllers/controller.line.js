@@ -195,10 +195,11 @@ module.exports = function(Chart) {
 
 			point._model.skip = point.custom && point.custom.skip ? point.custom.skip : (isNaN(point._model.x) || isNaN(point._model.y));
 
-			// Add to quadtree lookup
+
+			this.removeElementFromQuadTree(point); // remove old quadtree point always
 			if (point._model.radius > 0) {
-				var r = point._model.radius + point._model.borderWidth;
-				this.removeElementFromQuadTree(point); // remove old quadtree point
+				// Add to quadtree lookup if being drawn
+				var r = point._model.radius + point._model.borderWidth + point._model.hitRadius;
 				this.insertElementIntoQuadTree(point, {
 					x: point._model.x - r,
 					y: point._model.y - r,
