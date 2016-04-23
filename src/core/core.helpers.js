@@ -136,11 +136,13 @@ module.exports = function(Chart) {
 					// These properties are arrays of items
 					if (base.hasOwnProperty(key)) {
 						helpers.each(value, function(valueObj, index) {
+							var axisType = helpers.getValueOrDefault(valueObj.type, key === 'xAxes' ? 'category' : 'linear');
+							var axisDefaults = Chart.scaleService.getScaleDefaults(axisType);
 							if (index >= base[key].length || !base[key][index].type) {
-								base[key].push(helpers.configMerge(valueObj.type ? Chart.scaleService.getScaleDefaults(valueObj.type) : {}, valueObj));
-							} else if (valueObj.type !== base[key][index].type) {
+								base[key].push(helpers.configMerge(axisDefaults, valueObj));
+							} else if (valueObj.type && valueObj.type !== base[key][index].type) {
 								// Type changed. Bring in the new defaults before we bring in valueObj so that valueObj can override the correct scale defaults
-								base[key][index] = helpers.configMerge(base[key][index], valueObj.type ? Chart.scaleService.getScaleDefaults(valueObj.type) : {}, valueObj);
+								base[key][index] = helpers.configMerge(base[key][index], axisDefaults, valueObj);
 							} else {
 								// Type is the same
 								base[key][index] = helpers.configMerge(base[key][index], valueObj);
@@ -149,7 +151,8 @@ module.exports = function(Chart) {
 					} else {
 						base[key] = [];
 						helpers.each(value, function(valueObj) {
-							base[key].push(helpers.configMerge(valueObj.type ? Chart.scaleService.getScaleDefaults(valueObj.type) : {}, valueObj));
+							var axisType = helpers.getValueOrDefault(valueObj.type, key === 'xAxes' ? 'category' : 'linear');
+							base[key].push(helpers.configMerge(Chart.scaleService.getScaleDefaults(axisType), valueObj));
 						});
 					}
 				} else if (base.hasOwnProperty(key) && typeof base[key] === "object" && base[key] !== null && typeof value === "object") {
@@ -200,6 +203,23 @@ module.exports = function(Chart) {
 		});
 
 		return filtered;
+	};
+	helpers.findIndex = function(arrayToSearch, callback, thisArg) {
+		var index = -1;
+		if (Array.prototype.findIndex) {
+			index = arrayToSearch.findIndex(callback, thisArg);
+		} else {
+			for (var i = 0; i < arrayToSearch.length; ++i) {
+				thisArg = thisArg !== undefined ? thisArg : arrayToSearch;
+
+				if (callback.call(thisArg, arrayToSearch[i], i, arrayToSearch)) {
+					index = i;
+					break;
+				}
+			}
+		}
+
+		return index;
 	};
 	helpers.findNextWhere = function(arrayToSearch, filterCallback, startIndex) {
 		// Default to start of the array
@@ -645,11 +665,17 @@ module.exports = function(Chart) {
 		// Scale mouse coordinates into canvas coordinates
 		// by following the pattern laid out by 'jerryj' in the comments of
 		// http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
+		var paddingLeft = parseFloat(helpers.getStyle(canvas, 'padding-left'));
+		var paddingTop = parseFloat(helpers.getStyle(canvas, 'padding-top'));
+		var paddingRight = parseFloat(helpers.getStyle(canvas, 'padding-right'));
+		var paddingBottom = parseFloat(helpers.getStyle(canvas, 'padding-bottom'));
+		var width = boundingRect.right - boundingRect.left - paddingLeft - paddingRight;
+		var height = boundingRect.bottom - boundingRect.top - paddingTop - paddingBottom;
 
 		// We divide by the current device pixel ratio, because the canvas is scaled up by that amount in each direction. However
 		// the backend model is in unscaled coordinates. Since we are going to deal with our model coordinates, we go back here
-		mouseX = Math.round((mouseX - boundingRect.left) / (boundingRect.right - boundingRect.left) * canvas.width / chart.currentDevicePixelRatio);
-		mouseY = Math.round((mouseY - boundingRect.top) / (boundingRect.bottom - boundingRect.top) * canvas.height / chart.currentDevicePixelRatio);
+		mouseX = Math.round((mouseX - boundingRect.left - paddingLeft) / (width) * canvas.width / chart.currentDevicePixelRatio);
+		mouseY = Math.round((mouseY - boundingRect.top - paddingTop) / (height) * canvas.height / chart.currentDevicePixelRatio);
 
 		return {
 			x: mouseX,
@@ -692,30 +718,47 @@ module.exports = function(Chart) {
 			helpers.removeEvent(chartInstance.chart.canvas, eventName, handler);
 		});
 	};
-	helpers.getConstraintWidth = function(domNode) { // returns Number or undefined if no constraint
-		var constrainedWidth;
-		var constrainedWNode = document.defaultView.getComputedStyle(domNode)['max-width'];
-		var constrainedWContainer = document.defaultView.getComputedStyle(domNode.parentNode)['max-width'];
-		var hasCWNode = constrainedWNode !== null && constrainedWNode !== "none";
-		var hasCWContainer = constrainedWContainer !== null && constrainedWContainer !== "none";
 
-		if (hasCWNode || hasCWContainer) {
-			constrainedWidth = Math.min((hasCWNode ? parseInt(constrainedWNode, 10) : Number.POSITIVE_INFINITY), (hasCWContainer ? parseInt(constrainedWContainer, 10) : Number.POSITIVE_INFINITY));
+	// Private helper function to convert max-width/max-height values that may be percentages into a number
+	function parseMaxStyle(styleValue, node, parentProperty) {
+		var valueInPixels;
+		if (typeof(styleValue) === 'string') {
+			valueInPixels = parseInt(styleValue, 10);
+
+			if (styleValue.indexOf('%') != -1) {
+				// percentage * size in dimension
+				valueInPixels = valueInPixels / 100 * node.parentNode[parentProperty];
+			}
+		} else {
+			valueInPixels = styleValue;
 		}
-		return constrainedWidth;
+
+		return valueInPixels;
+	}
+
+	// Private helper to get a constraint dimension
+	// @param domNode : the node to check the constraint on
+	// @param maxStyle : the style that defines the maximum for the direction we are using (max-width / max-height)
+	// @param percentageProperty : property of parent to use when calculating width as a percentage
+	function getConstraintDimension(domNode, maxStyle, percentageProperty) {
+		var constrainedDimension;
+		var constrainedNode = document.defaultView.getComputedStyle(domNode)[maxStyle];
+		var constrainedContainer = document.defaultView.getComputedStyle(domNode.parentNode)[maxStyle];
+		var hasCNode = constrainedNode !== null && constrainedNode !== "none";
+		var hasCContainer = constrainedContainer !== null && constrainedContainer !== "none";
+
+		if (hasCNode || hasCContainer) {
+			constrainedDimension = Math.min((hasCNode ? parseMaxStyle(constrainedNode, domNode, percentageProperty) : Number.POSITIVE_INFINITY), (hasCContainer ? parseMaxStyle(constrainedContainer, domNode.parentNode, percentageProperty) : Number.POSITIVE_INFINITY));
+		}
+		return constrainedDimension;
+	}
+	// returns Number or undefined if no constraint
+	helpers.getConstraintWidth = function(domNode) {
+		return getConstraintDimension(domNode, 'max-width', 'clientWidth');
 	};
 	// returns Number or undefined if no constraint
 	helpers.getConstraintHeight = function(domNode) {
-		var constrainedHeight;
-		var constrainedHNode = document.defaultView.getComputedStyle(domNode)['max-height'];
-		var constrainedHContainer = document.defaultView.getComputedStyle(domNode.parentNode)['max-height'];
-		var hasCHNode = constrainedHNode !== null && constrainedHNode !== "none";
-		var hasCHContainer = constrainedHContainer !== null && constrainedHContainer !== "none";
-
-		if (constrainedHNode || constrainedHContainer) {
-			constrainedHeight = Math.min((hasCHNode ? parseInt(constrainedHNode, 10) : Number.POSITIVE_INFINITY), (hasCHContainer ? parseInt(constrainedHContainer, 10) : Number.POSITIVE_INFINITY));
-		}
-		return constrainedHeight;
+		return getConstraintDimension(domNode, 'max-height', 'clientHeight');
 	};
 	helpers.getMaximumWidth = function(domNode) {
 		var container = domNode.parentNode;
@@ -757,14 +800,14 @@ module.exports = function(Chart) {
 			ctx.canvas.width = width * pixelRatio;
 			ctx.scale(pixelRatio, pixelRatio);
 
-			ctx.canvas.style.width = width + 'px';
-			ctx.canvas.style.height = height + 'px';
-
 			// Store the device pixel ratio so that we can go backwards in `destroy`.
 			// The devicePixelRatio changes with zoom, so there are no guarantees that it is the same
 			// when destroy is called
 			chart.originalDevicePixelRatio = chart.originalDevicePixelRatio || pixelRatio;
 		}
+
+		ctx.canvas.style.width = width + 'px';
+		ctx.canvas.style.height = height + 'px';
 	};
 	//-- Canvas methods
 	helpers.clear = function(chart) {
@@ -787,21 +830,26 @@ module.exports = function(Chart) {
 		ctx.font = font;
 		var longest = 0;
 		helpers.each(arrayOfStrings, function(string) {
-			var textWidth = cache.data[string];
-			if (!textWidth) {
-				textWidth = cache.data[string] = ctx.measureText(string).width;
-				cache.garbageCollect.push(string);
+			// Undefined strings should not be measured
+			if (string !== undefined && string !== null) {
+				var textWidth = cache.data[string];
+				if (!textWidth) {
+					textWidth = cache.data[string] = ctx.measureText(string).width;
+					cache.garbageCollect.push(string);
+				}
+
+				if (textWidth > longest) {
+					longest = textWidth;
+				}
 			}
-			if (textWidth > longest)
-				longest = textWidth;
 		});
 
 		var gcLen = cache.garbageCollect.length / 2;
 		if (gcLen > arrayOfStrings.length) {
 			for (var i = 0; i < gcLen; i++) {
-				var key = cache.garbageCollect.shift();
-				delete cache.data[key];
+				delete cache.data[cache.garbageCollect[i]];
 			}
+			cache.garbageCollect.splice(0, gcLen);
 		}
 
 		return longest;
@@ -824,6 +872,12 @@ module.exports = function(Chart) {
 			console.log('Color.js not found!');
 			return c;
 		}
+
+		/* global CanvasGradient */
+		if (c instanceof CanvasGradient) {
+			return color(Chart.defaults.global.defaultColor);
+		}
+
 		return color(c);
 	};
 	helpers.addResizeListener = function(node, callback) {

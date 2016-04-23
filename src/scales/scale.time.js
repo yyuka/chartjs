@@ -7,12 +7,6 @@ moment = typeof(moment) === 'function' ? moment : window.moment;
 module.exports = function(Chart) {
 
 	var helpers = Chart.helpers;
-
-	if (!moment) {
-		console.warn('Chart.js - Moment.js could not be found! You must include it before Chart.js to use the time scale. Download at http://momentjs.com/');
-		return;
-	}
-
 	var time = {
 		units: [{
 			name: 'millisecond',
@@ -48,7 +42,8 @@ module.exports = function(Chart) {
 		position: "bottom",
 
 		time: {
-			format: false, // false == date objects or use pattern string from http://momentjs.com/docs/#/parsing/string-format/
+			parser: false, // false == a pattern string from http://momentjs.com/docs/#/parsing/string-format/ or a custom callback that converts its argument to a moment
+			format: false, // DEPRECATED false == date objects, moment object, callback or a pattern string from http://momentjs.com/docs/#/parsing/string-format/
 			unit: false, // false == automatic or override with week, month, year, etc.
 			round: false, // none, or override with week, month, year, etc.
 			displayFormat: false, // DEPRECATED
@@ -67,11 +62,18 @@ module.exports = function(Chart) {
 			}
 		},
 		ticks: {
-			autoSkip: false,
+			autoSkip: false
 		}
 	};
 
 	var TimeScale = Chart.Scale.extend({
+		initialize: function() {
+			if (!moment) {
+				throw new Error('Chart.js - Moment.js could not be found! You must include it before Chart.js to use the time scale. Download at https://momentjs.com');
+			}
+
+			Chart.Scale.prototype.initialize.call(this);
+		},
 		getLabelMoment: function(datasetIndex, index) {
 			return this.labelMoments[datasetIndex][index];
 		},
@@ -135,23 +137,38 @@ module.exports = function(Chart) {
 		},
 		buildTicks: function(index) {
 
+			this.ctx.save();
+			var tickFontSize = helpers.getValueOrDefault(this.options.ticks.fontSize, Chart.defaults.global.defaultFontSize);
+			var tickFontStyle = helpers.getValueOrDefault(this.options.ticks.fontStyle, Chart.defaults.global.defaultFontStyle);
+			var tickFontFamily = helpers.getValueOrDefault(this.options.ticks.fontFamily, Chart.defaults.global.defaultFontFamily);
+			var tickLabelFont = helpers.fontString(tickFontSize, tickFontStyle, tickFontFamily);
+			this.ctx.font = tickLabelFont;
+
 			this.ticks = [];
 			this.unitScale = 1; // How much we scale the unit by, ie 2 means 2x unit per step
+			this.scaleSizeInUnits = 0; // How large the scale is in the base unit (seconds, minutes, etc)
 
 			// Set unit override if applicable
 			if (this.options.time.unit) {
 				this.tickUnit = this.options.time.unit || 'day';
 				this.displayFormat = this.options.time.displayFormats[this.tickUnit];
-				this.tickRange = Math.ceil(this.lastTick.diff(this.firstTick, this.tickUnit, true));
+				this.scaleSizeInUnits = this.lastTick.diff(this.firstTick, this.tickUnit, true);
+				this.unitScale = helpers.getValueOrDefault(this.options.time.unitStepSize, 1);
 			} else {
 				// Determine the smallest needed unit of the time
 				var innerWidth = this.isHorizontal() ? this.width - (this.paddingLeft + this.paddingRight) : this.height - (this.paddingTop + this.paddingBottom);
-				var labelCapacity = innerWidth / (this.options.ticks.fontSize + 10);
-				var buffer = this.options.time.round ? 0 : 1;
+
+				// Crude approximation of what the label length might be
+				var tempFirstLabel = this.tickFormatFunction(this.firstTick, 0, []);
+				var tickLabelWidth = this.ctx.measureText(tempFirstLabel).width;
+				var cosRotation = Math.cos(helpers.toRadians(this.options.ticks.maxRotation));
+				var sinRotation = Math.sin(helpers.toRadians(this.options.ticks.maxRotation));
+				tickLabelWidth = (tickLabelWidth * cosRotation) + (tickFontSize * sinRotation);
+				var labelCapacity = innerWidth / (tickLabelWidth);
 
 				// Start as small as possible
 				this.tickUnit = 'millisecond';
-				this.tickRange = Math.ceil(this.lastTick.diff(this.firstTick, this.tickUnit, true) + buffer);
+				this.scaleSizeInUnits = this.lastTick.diff(this.firstTick, this.tickUnit, true);
 				this.displayFormat = this.options.time.displayFormats[this.tickUnit];
 
 				var unitDefinitionIndex = 0;
@@ -162,19 +179,19 @@ module.exports = function(Chart) {
 					// Can we scale this unit. If `false` we can scale infinitely
 					this.unitScale = 1;
 
-					if (helpers.isArray(unitDefinition.steps) && Math.ceil(this.tickRange / labelCapacity) < helpers.max(unitDefinition.steps)) {
+					if (helpers.isArray(unitDefinition.steps) && Math.ceil(this.scaleSizeInUnits / labelCapacity) < helpers.max(unitDefinition.steps)) {
 						// Use one of the prefedined steps
 						for (var idx = 0; idx < unitDefinition.steps.length; ++idx) {
-							if (unitDefinition.steps[idx] > Math.ceil(this.tickRange / labelCapacity)) {
-								this.unitScale = unitDefinition.steps[idx];
+							if (unitDefinition.steps[idx] >= Math.ceil(this.scaleSizeInUnits / labelCapacity)) {
+								this.unitScale = helpers.getValueOrDefault(this.options.time.unitStepSize, unitDefinition.steps[idx]);
 								break;
 							}
 						}
 
 						break;
-					} else if ((unitDefinition.maxStep === false) || (Math.ceil(this.tickRange / labelCapacity) < unitDefinition.maxStep)) {
+					} else if ((unitDefinition.maxStep === false) || (Math.ceil(this.scaleSizeInUnits / labelCapacity) < unitDefinition.maxStep)) {
 						// We have a max step. Scale this unit
-						this.unitScale = Math.ceil(this.tickRange / labelCapacity);
+						this.unitScale = helpers.getValueOrDefault(this.options.time.unitStepSize, Math.ceil(this.scaleSizeInUnits / labelCapacity));
 						break;
 					} else {
 						// Move to the next unit up
@@ -182,7 +199,7 @@ module.exports = function(Chart) {
 						unitDefinition = time.units[unitDefinitionIndex];
 
 						this.tickUnit = unitDefinition.name;
-						this.tickRange = Math.ceil(this.lastTick.diff(this.firstTick, this.tickUnit) + buffer);
+						this.scaleSizeInUnits = this.lastTick.diff(this.firstTick, this.tickUnit, true);
 						this.displayFormat = this.options.time.displayFormats[unitDefinition.name];
 					}
 				}
@@ -220,7 +237,7 @@ module.exports = function(Chart) {
 			this.ticks.push(this.firstTick.clone());
 
 			// For every unit in between the first and last moment, create a moment and add it to the ticks tick
-			for (var i = 1; i < this.tickRange; ++i) {
+			for (var i = 1; i < this.scaleSizeInUnits; ++i) {
 				var newTick = roundedStart.clone().add(i, this.tickUnit);
 
 				// Are we greater than the max time
@@ -234,13 +251,19 @@ module.exports = function(Chart) {
 			}
 
 			// Always show the right tick
-			if (this.options.time.max) {
-				this.ticks.push(this.lastTick.clone());
-			} else if (this.ticks[this.ticks.length - 1].diff(this.lastTick, this.tickUnit, true) !== 0) {
-				this.tickRange = Math.ceil(this.tickRange / this.unitScale) * this.unitScale;
-				this.ticks.push(this.firstTick.clone().add(this.tickRange, this.tickUnit));
-				this.lastTick = this.ticks[this.ticks.length - 1].clone();
+			if (this.ticks[this.ticks.length - 1].diff(this.lastTick, this.tickUnit) !== 0 || this.scaleSizeInUnits === 0) {
+			// this is a weird case. If the <max> option is the same as the end option, we can't just diff the times because the tick was created from the roundedStart
+			// but the last tick was not rounded.
+				if (this.options.time.max) {
+					this.ticks.push(this.lastTick.clone());
+					this.scaleSizeInUnits = this.lastTick.diff(this.ticks[0], this.tickUnit, true);
+				} else {
+					this.scaleSizeInUnits = Math.ceil(this.scaleSizeInUnits / this.unitScale) * this.unitScale;
+					this.ticks.push(this.firstTick.clone().add(this.scaleSizeInUnits, this.tickUnit));
+					this.lastTick = this.ticks[this.ticks.length - 1].clone();
+				}
 			}
+			this.ctx.restore();
 		},
 		// Get tooltip label
 		getLabelForIndex: function(index, datasetIndex) {
@@ -257,38 +280,49 @@ module.exports = function(Chart) {
 
 			return label;
 		},
-		convertTicksToLabels: function() {
-			this.ticks = this.ticks.map(function(tick, index, ticks) {
-				var formattedTick = tick.format(this.displayFormat);
+		// Function to format an individual tick mark
+		tickFormatFunction: function tickFormatFunction(tick, index, ticks) {
+			var formattedTick = tick.format(this.displayFormat);
 
-				if (this.options.ticks.userCallback) {
-					return this.options.ticks.userCallback(formattedTick, index, ticks);
-				} else {
-					return formattedTick;
-				}
-			}, this);
+			if (this.options.ticks.userCallback) {
+				return this.options.ticks.userCallback(formattedTick, index, ticks);
+			} else {
+				return formattedTick;
+			}
+		},
+		convertTicksToLabels: function() {
+			this.ticks = this.ticks.map(this.tickFormatFunction, this);
 		},
 		getPixelForValue: function(value, index, datasetIndex, includeOffset) {
 			var labelMoment = this.getLabelMoment(datasetIndex, index);
-			var offset = labelMoment.diff(this.firstTick, this.tickUnit, true);
 
-			var decimal = offset / this.tickRange;
+			if (labelMoment) {
+				var offset = labelMoment.diff(this.firstTick, this.tickUnit, true);
 
-			if (this.isHorizontal()) {
-				var innerWidth = this.width - (this.paddingLeft + this.paddingRight);
-				var valueWidth = innerWidth / Math.max(this.ticks.length - 1, 1);
-				var valueOffset = (innerWidth * decimal) + this.paddingLeft;
+				var decimal = offset / this.scaleSizeInUnits;
 
-				return this.left + Math.round(valueOffset);
-			} else {
-				var innerHeight = this.height - (this.paddingTop + this.paddingBottom);
-				var valueHeight = innerHeight / Math.max(this.ticks.length - 1, 1);
-				var heightOffset = (innerHeight * decimal) + this.paddingTop;
+				if (this.isHorizontal()) {
+					var innerWidth = this.width - (this.paddingLeft + this.paddingRight);
+					var valueWidth = innerWidth / Math.max(this.ticks.length - 1, 1);
+					var valueOffset = (innerWidth * decimal) + this.paddingLeft;
 
-				return this.top + Math.round(heightOffset);
+					return this.left + Math.round(valueOffset);
+				} else {
+					var innerHeight = this.height - (this.paddingTop + this.paddingBottom);
+					var valueHeight = innerHeight / Math.max(this.ticks.length - 1, 1);
+					var heightOffset = (innerHeight * decimal) + this.paddingTop;
+
+					return this.top + Math.round(heightOffset);
+				}
 			}
 		},
 		parseTime: function(label) {
+			if (typeof this.options.time.parser === 'string') {
+				return moment(label, this.options.time.parser);
+			}
+			if (typeof this.options.time.parser === 'function') {
+				return this.options.time.parser(label);
+			}
 			// Date objects
 			if (typeof label.getMonth === 'function' || typeof label === 'number') {
 				return moment(label);
@@ -299,6 +333,7 @@ module.exports = function(Chart) {
 			}
 			// Custom parsing (return an instance of moment)
 			if (typeof this.options.time.format !== 'string' && this.options.time.format.call) {
+				console.warn("options.time.format is deprecated and replaced by options.time.parser. See http://nnnick.github.io/Chart.js/docs-v2/#scales-time-scale");
 				return this.options.time.format(label);
 			}
 			// Moment format parsing

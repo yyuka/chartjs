@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html>
 
@@ -61,6 +62,18 @@
                     title: {
                         display: true,
                         text: 'Chart.js Combo Bar Line Chart'
+                    },
+                    animation: {
+                        onComplete: function () {
+                            var ctx = this.chart.ctx;
+                            ctx.textAlign = "center";
+
+                            Chart.helpers.each(this.data.datasets.forEach(function (dataset) {
+                                Chart.helpers.each(dataset.metaData.forEach(function (bar, index) {
+                                    ctx.fillText(dataset.data[index], bar._model.x, bar._model.y - 10);
+                                    }),this)
+                                    }),this);
+                        }
                     }
                 }
             });

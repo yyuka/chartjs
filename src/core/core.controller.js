@@ -51,9 +51,8 @@ module.exports = function(Chart) {
 	helpers.extend(Chart.Controller.prototype, {
 
 		initialize: function initialize() {
-
-			// TODO
-			// If BeforeInit(this) doesn't return false, proceed
+			// Before init plugin notification
+			Chart.pluginService.notifyPlugins('beforeInit', [this]);
 
 			this.bindEvents();
 
@@ -66,11 +65,10 @@ module.exports = function(Chart) {
 			this.updateLayout();
 			this.resetElements();
 			this.initToolTip();
-			this.draw();
 			this.update();
 
-			// TODO
-			// If AfterInit(this) doesn't return false, proceed
+			// After init plugin notification
+			Chart.pluginService.notifyPlugins('afterInit', [this]);
 
 			return this;
 		},
@@ -143,7 +141,8 @@ module.exports = function(Chart) {
 			if (this.options.scales) {
 				if (this.options.scales.xAxes && this.options.scales.xAxes.length) {
 					helpers.each(this.options.scales.xAxes, function(xAxisOptions, index) {
-						var ScaleClass = Chart.scaleService.getScaleConstructor(xAxisOptions.type);
+						var xType = helpers.getValueOrDefault(xAxisOptions.type, 'category');
+						var ScaleClass = Chart.scaleService.getScaleConstructor(xType);
 						if (ScaleClass) {
 							var scale = new ScaleClass({
 								ctx: this.chart.ctx,
@@ -160,7 +159,8 @@ module.exports = function(Chart) {
 				if (this.options.scales.yAxes && this.options.scales.yAxes.length) {
 					// Build the y axes
 					helpers.each(this.options.scales.yAxes, function(yAxisOptions, index) {
-						var ScaleClass = Chart.scaleService.getScaleConstructor(yAxisOptions.type);
+						var yType = helpers.getValueOrDefault(yAxisOptions.type, 'linear');
+						var ScaleClass = Chart.scaleService.getScaleConstructor(yType);
 						if (ScaleClass) {
 							var scale = new ScaleClass({
 								ctx: this.chart.ctx,
@@ -258,6 +258,8 @@ module.exports = function(Chart) {
 		},
 
 		update: function update(animationDuration, lazy) {
+			Chart.pluginService.notifyPlugins('beforeUpdate', [this]);
+
 			// In case the entire data object changed
 			this.tooltip._data = this.data;
 
@@ -281,9 +283,12 @@ module.exports = function(Chart) {
 				dataset.controller.update();
 			});
 			this.render(animationDuration, lazy);
+
+			Chart.pluginService.notifyPlugins('afterUpdate', [this]);
 		},
 
 		render: function render(duration, lazy) {
+			Chart.pluginService.notifyPlugins('beforeRender', [this]);
 
 			if (this.options.animation && ((typeof duration !== 'undefined' && duration !== 0) || (typeof duration === 'undefined' && this.options.animation.duration !== 0))) {
 				var animation = new Chart.Animation();
@@ -317,6 +322,8 @@ module.exports = function(Chart) {
 			var easingDecimal = ease || 1;
 			this.clear();
 
+			Chart.pluginService.notifyPlugins('beforeDraw', [this, easingDecimal]);
+
 			// Draw all the scales
 			helpers.each(this.boxes, function(box) {
 				box.draw(this.chartArea);
@@ -325,6 +332,12 @@ module.exports = function(Chart) {
 				this.scale.draw();
 			}
 
+			// Clip out the chart area so that anything outside does not draw. This is necessary for zoom and pan to function
+			this.chart.ctx.save();
+			this.chart.ctx.beginPath();
+			this.chart.ctx.rect(this.chartArea.left, this.chartArea.top, this.chartArea.right - this.chartArea.left, this.chartArea.bottom - this.chartArea.top);
+			this.chart.ctx.clip();
+
 			// Draw each dataset via its respective controller (reversed to support proper line stacking)
 			helpers.each(this.data.datasets, function(dataset, datasetIndex) {
 				if (helpers.isDatasetVisible(dataset)) {
@@ -332,8 +345,13 @@ module.exports = function(Chart) {
 				}
 			}, null, true);
 
+			// Restore from the clipping operation
+			this.chart.ctx.restore();
+
 			// Finally draw the tooltip
 			this.tooltip.transition(easingDecimal).draw();
+
+			Chart.pluginService.notifyPlugins('afterDraw', [this, easingDecimal]);
 		},
 
 		// Get the single element that was clicked on
@@ -385,11 +403,13 @@ module.exports = function(Chart) {
 			var elementsArray = [];
 
 			var found = (function() {
-				for (var i = 0; i < this.data.datasets.length; i++) {
-					if (helpers.isDatasetVisible(this.data.datasets[i])) {
-						for (var j = 0; j < this.data.datasets[i].metaData.length; j++) {
-							if (this.data.datasets[i].metaData[j].inRange(eventPosition.x, eventPosition.y)) {
-								return this.data.datasets[i].metaData[j];
+				if (this.data.datasets) {
+					for (var i = 0; i < this.data.datasets.length; i++) {
+						if (helpers.isDatasetVisible(this.data.datasets[i])) {
+							for (var j = 0; j < this.data.datasets[i].metaData.length; j++) {
+								if (this.data.datasets[i].metaData[j].inRange(eventPosition.x, eventPosition.y)) {
+									return this.data.datasets[i].metaData[j];
+								}
 							}
 						}
 					}
@@ -436,6 +456,8 @@ module.exports = function(Chart) {
 			// Reset to the old style since it may have been changed by the device pixel ratio changes
 			canvas.style.width = this.chart.originalCanvasStyleWidth;
 			canvas.style.height = this.chart.originalCanvasStyleHeight;
+
+			Chart.pluginService.notifyPlugins('destroy', [this]);
 
 			delete Chart.instances[this.id];
 		},

@@ -113,9 +113,10 @@ module.exports = function(Chart) {
 					datasetLabel: this.getDataset().label,
 
 					// Appearance
-					base: this.calculateBarBase(this.index, index),
+					base: reset ? yScalePoint : this.calculateBarBase(this.index, index),
 					width: this.calculateBarWidth(numBars),
 					backgroundColor: rectangle.custom && rectangle.custom.backgroundColor ? rectangle.custom.backgroundColor : helpers.getValueAtIndexOrDefault(this.getDataset().backgroundColor, index, this.chart.options.elements.rectangle.backgroundColor),
+					borderSkipped: rectangle.custom && rectangle.custom.borderSkipped ? rectangle.custom.borderSkipped : this.chart.options.elements.rectangle.borderSkipped,
 					borderColor: rectangle.custom && rectangle.custom.borderColor ? rectangle.custom.borderColor : helpers.getValueAtIndexOrDefault(this.getDataset().borderColor, index, this.chart.options.elements.rectangle.borderColor),
 					borderWidth: rectangle.custom && rectangle.custom.borderWidth ? rectangle.custom.borderWidth : helpers.getValueAtIndexOrDefault(this.getDataset().borderWidth, index, this.chart.options.elements.rectangle.borderWidth)
 				}
@@ -183,6 +184,12 @@ module.exports = function(Chart) {
 			var categoryWidth = tickWidth * xScale.options.categoryPercentage;
 			var categorySpacing = (tickWidth - (tickWidth * xScale.options.categoryPercentage)) / 2;
 			var fullBarWidth = categoryWidth / datasetCount;
+			
+			if (xScale.ticks.length !== this.chart.data.labels.length) {
+			    var perc = xScale.ticks.length / this.chart.data.labels.length;
+			    fullBarWidth = fullBarWidth * perc;
+			}
+			
 			var barWidth = fullBarWidth * xScale.options.barPercentage;
 			var barSpacing = fullBarWidth - (fullBarWidth * xScale.options.barPercentage);
 

@@ -9,21 +9,14 @@ module.exports = function(Chart) {
 		custom: null,
 		mode: 'single',
 		backgroundColor: "rgba(0,0,0,0.8)",
-		titleFontFamily: Chart.defaults.global.defaultFontFamily,
-		titleFontSize: Chart.defaults.global.defaultFontSize,
 		titleFontStyle: "bold",
 		titleSpacing: 2,
 		titleMarginBottom: 6,
 		titleColor: "#fff",
 		titleAlign: "left",
-		bodyFontFamily: Chart.defaults.global.defaultFontFamily,
-		bodyFontSize: Chart.defaults.global.defaultFontSize,
-		bodyFontStyle: Chart.defaults.global.defaultFontStyle,
 		bodySpacing: 2,
 		bodyColor: "#fff",
 		bodyAlign: "left",
-		footerFontFamily: Chart.defaults.global.defaultFontFamily,
-		footerFontSize: Chart.defaults.global.defaultFontSize,
 		footerFontStyle: "bold",
 		footerSpacing: 2,
 		footerMarginTop: 6,
@@ -31,6 +24,8 @@ module.exports = function(Chart) {
 		footerAlign: "left",
 		yPadding: 6,
 		xPadding: 6,
+		yAlign : 'center',
+		xAlign : 'center',
 		caretSize: 5,
 		cornerRadius: 6,
 		multiKeyBackground: '#fff',
@@ -95,29 +90,31 @@ module.exports = function(Chart) {
 					// Positioning
 					xPadding: options.tooltips.xPadding,
 					yPadding: options.tooltips.yPadding,
+					xAlign : options.tooltips.yAlign,
+					yAlign : options.tooltips.xAlign,
 
 					// Body
 					bodyColor: options.tooltips.bodyColor,
-					_bodyFontFamily: options.tooltips.bodyFontFamily,
-					_bodyFontStyle: options.tooltips.bodyFontStyle,
+					_bodyFontFamily: helpers.getValueOrDefault(options.tooltips.bodyFontFamily, Chart.defaults.global.defaultFontFamily),
+					_bodyFontStyle: helpers.getValueOrDefault(options.tooltips.bodyFontStyle, Chart.defaults.global.defaultFontStyle),
 					_bodyAlign: options.tooltips.bodyAlign,
-					bodyFontSize: options.tooltips.bodyFontSize,
+					bodyFontSize: helpers.getValueOrDefault(options.tooltips.bodyFontSize, Chart.defaults.global.defaultFontSize),
 					bodySpacing: options.tooltips.bodySpacing,
 
 					// Title
 					titleColor: options.tooltips.titleColor,
-					_titleFontFamily: options.tooltips.titleFontFamily,
-					_titleFontStyle: options.tooltips.titleFontStyle,
-					titleFontSize: options.tooltips.titleFontSize,
+					_titleFontFamily: helpers.getValueOrDefault(options.tooltips.titleFontFamily, Chart.defaults.global.defaultFontFamily),
+					_titleFontStyle: helpers.getValueOrDefault(options.tooltips.titleFontStyle, Chart.defaults.global.defaultFontStyle),
+					titleFontSize: helpers.getValueOrDefault(options.tooltips.titleFontSize, Chart.defaults.global.defaultFontSize),
 					_titleAlign: options.tooltips.titleAlign,
 					titleSpacing: options.tooltips.titleSpacing,
 					titleMarginBottom: options.tooltips.titleMarginBottom,
 
 					// Footer
 					footerColor: options.tooltips.footerColor,
-					_footerFontFamily: options.tooltips.footerFontFamily,
-					_footerFontStyle: options.tooltips.footerFontStyle,
-					footerFontSize: options.tooltips.footerFontSize,
+					_footerFontFamily: helpers.getValueOrDefault(options.tooltips.footerFontFamily, Chart.defaults.global.defaultFontFamily),
+					_footerFontStyle: helpers.getValueOrDefault(options.tooltips.footerFontStyle, Chart.defaults.global.defaultFontStyle),
+					footerFontSize: helpers.getValueOrDefault(options.tooltips.footerFontSize, Chart.defaults.global.defaultFontSize),
 					_footerAlign: options.tooltips.footerAlign,
 					footerSpacing: options.tooltips.footerSpacing,
 					footerMarginTop: options.tooltips.footerMarginTop,
@@ -253,7 +250,7 @@ module.exports = function(Chart) {
 								datasetIndex: datasetIndex
 							});
 						}
-					}, null, element._yScale.options.stacked);
+					}, null);
 
 					helpers.each(this._active, function(active) {
 						if (active) {
@@ -262,10 +259,9 @@ module.exports = function(Chart) {
 								backgroundColor: active._view.backgroundColor
 							});
 						}
-					}, null, element._yScale.options.stacked);
+					}, null);
 
 					tooltipPosition = this.getAveragePosition(this._active);
-					tooltipPosition.y = this._active[0]._yScale.getPixelForDecimal(0.5);
 				}
 
 				// Build the Text Lines
@@ -340,8 +336,6 @@ module.exports = function(Chart) {
 			return size;
 		},
 		determineAlignment: function determineAlignment(size) {
-			this._model.xAlign = this._model.yAlign = "center";
-
 			if (this._model.y < size.height) {
 				this._model.yAlign = 'top';
 			} else if (this._model.y > (this._chart.height - size.height)) {
@@ -483,7 +477,8 @@ module.exports = function(Chart) {
 				}
 			}
 
-			ctx.fillStyle = helpers.color(vm.backgroundColor).alpha(opacity).rgbString();
+			var bgColor = helpers.color(vm.backgroundColor);
+			ctx.fillStyle = bgColor.alpha(opacity * bgColor.alpha()).rgbString();
 			ctx.beginPath();
 			ctx.moveTo(x1, y1);
 			ctx.lineTo(x2, y2);
@@ -495,7 +490,9 @@ module.exports = function(Chart) {
 			if (vm.title.length) {
 				ctx.textAlign = vm._titleAlign;
 				ctx.textBaseline = "top";
-				ctx.fillStyle = helpers.color(vm.titleColor).alpha(opacity).rgbString();
+				
+				var titleColor = helpers.color(vm.titleColor);
+				ctx.fillStyle = titleColor.alpha(opacity * titleColor.alpha()).rgbString();
 				ctx.font = helpers.fontString(vm.titleFontSize, vm._titleFontStyle, vm._titleFontFamily);
 
 				helpers.each(vm.title, function(title, i) {
@@ -511,7 +508,9 @@ module.exports = function(Chart) {
 		drawBody: function drawBody(pt, vm, ctx, opacity) {
 			ctx.textAlign = vm._bodyAlign;
 			ctx.textBaseline = "top";
-			ctx.fillStyle = helpers.color(vm.bodyColor).alpha(opacity).rgbString();
+
+			var bodyColor = helpers.color(vm.bodyColor);
+			ctx.fillStyle = bodyColor.alpha(opacity * bodyColor.alpha()).rgbString();
 			ctx.font = helpers.fontString(vm.bodyFontSize, vm._bodyFontStyle, vm._bodyFontFamily);
 
 			// Before Body
@@ -558,7 +557,9 @@ module.exports = function(Chart) {
 
 				ctx.textAlign = vm._footerAlign;
 				ctx.textBaseline = "top";
-				ctx.fillStyle = helpers.color(vm.footerColor).alpha(opacity).rgbString();
+				
+				var footerColor = helpers.color(vm.footerColor);
+				ctx.fillStyle = footerColor.alpha(opacity * footerColor.alpha()).rgbString();
 				ctx.font = helpers.fontString(vm.footerFontSize, vm._footerFontStyle, vm._footerFontFamily);
 
 				helpers.each(vm.footer, function(footer) {
@@ -587,7 +588,8 @@ module.exports = function(Chart) {
 
 			if (this._options.tooltips.enabled) {
 				// Draw Background
-				ctx.fillStyle = helpers.color(vm.backgroundColor).alpha(opacity).rgbString();
+				var bgColor = helpers.color(vm.backgroundColor);
+				ctx.fillStyle = bgColor.alpha(opacity * bgColor.alpha()).rgbString();
 				helpers.drawRoundedRectangle(ctx, pt.x, pt.y, tooltipSize.width, tooltipSize.height, vm.cornerRadius);
 				ctx.fill();
 

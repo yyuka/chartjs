@@ -35,6 +35,7 @@ afterUpdate | Function | undefined | Callback that runs at the end of the update
 *gridLines*.lineWidth | Number | 1 | Stroke width of grid lines
 *gridLines*.drawOnChartArea | Boolean | true | If true, draw lines on the chart area inside the axis lines. This is useful when there are multiple axes and you need to control which grid lines are drawn
 *gridLines*.drawTicks | Boolean | true |  If true, draw lines beside the ticks in the axis area beside the chart.
+*gridLines*.tickMarkLength | Number | 10 | Length in pixels that the grid lines will draw into the axis area.
 *gridLines*.zeroLineWidth | Number | 1 | Stroke width of the grid line for the first index (index 0).
 *gridLines*.zeroLineColor | Color | "rgba(0, 0, 0, 0.25)" | Stroke color of the grid line for the first index (index 0).
 *gridLines*.offsetGridLines | Boolean | false | If true, offset labels from grid lines.
@@ -60,7 +61,7 @@ afterUpdate | Function | undefined | Callback that runs at the end of the update
 *ticks*.display | Boolean | true | If true, show the ticks.
 *ticks*.suggestedMin | Number | - | User defined minimum number for the scale, overrides minimum value *except for if* it is higher than the minimum value.
 *ticks*.suggestedMax | Number | - | User defined maximum number for the scale, overrides maximum value *except for if* it is lower than the maximum value.
-*ticks*.min | Number | - | User defined minimum number for the scale, overrides minimum value
+*ticks*.min | Number | - | User defined minimum number for the scale, overrides minimum value. 
 *ticks*.max | Number | - | User defined minimum number for the scale, overrides maximum value
 *ticks*.autoSkip | Boolean | true | If true, automatically calculates how many labels that can be shown and hides labels accordingly. Turn it off to show all labels no matter what
 *ticks*.callback | Function | `function(value) { return '' + value; } ` | Returns the string representation of the tick value as it should be displayed on the chart.
@@ -92,6 +93,8 @@ The category scale extends the core scale class with the following tick template
 	position: "bottom",
 }
 ```
+
+The `ticks.min` and `ticks.max` attributes may be used with the category scale. Unlike other scales, the value of these attributes must simply be something that can be found in the `labels` array of the data object.
 
 ### Linear Scale
 The linear scale can be used to display numerical data. It can be placed on either the x or y axis. The scatter chart type automatically configures a line chart to use one of these scales for the x axis.
@@ -134,9 +137,9 @@ It also provides additional configuration options:
 
 Name | Type | Default | Description
 --- |:---:| --- | ---
-*ticks*.fixedStepSize | Number | - | User defined fixed step size for the scale. If set, the scale ticks will be enumerated by multiple of fixedStepSize, having one tick per increment. If not set, the ticks are labeled automatically using the nice numbers algorithm.
+*ticks*.stepSize | Number | - | User defined fixed step size for the scale. If set, the scale ticks will be enumerated by multiple of stepSize, having one tick per increment. If not set, the ticks are labeled automatically using the nice numbers algorithm.
 
-#### Logarithmic Scale
+### Logarithmic Scale
 The logarithmic scale is used to display logarithmic data of course. It can be placed on either the x or y axis.
 
 The log scale extends the core scale class with the following tick template:
@@ -168,11 +171,16 @@ The time scale extends the core scale class with the following tick template:
 	position: "bottom",
 	time: {
 		// string/callback - By default, date objects are expected. You may use a pattern string from http://momentjs.com/docs/#/parsing/string-format/ to parse a time string format, or use a callback function that is passed the label, and must return a moment() instance.
-		format: false,
+		parser: false,
 		// string - By default, unit will automatically be detected.  Override with 'week', 'month', 'year', etc. (see supported time measurements)
 		unit: false,
+
+		// Number - The number of steps of the above unit between ticks
+		unitStepSize: 1
+
 		// string - By default, no rounding is applied.  To round, set to a supported time unit eg. 'week', 'month', 'year', etc.
 		round: false,
+		
 		// Moment js for each of the units. Replaces `displayFormat`
 		// To override, use a pattern string from http://momentjs.com/docs/#/displaying/format/
 		displayFormats: {

@@ -8,7 +8,8 @@ module.exports = function(Chart) {
 		position: "left",
 		ticks: {
 			callback: function(tickValue, index, ticks) {
-				var delta = ticks[1] - ticks[0];
+				// If we have lots of ticks, don't use the ones
+				var delta = ticks.length > 3 ? ticks[2] - ticks[1] : ticks[1] - ticks[0];
 
 				// If we have a number like 2.5 as the delta, figure out how many decimal places we need
 				if (Math.abs(delta) > 1) {
@@ -162,12 +163,11 @@ module.exports = function(Chart) {
 			var maxTicks;
 
 			if (this.isHorizontal()) {
-				maxTicks = Math.min(this.options.ticks.maxTicksLimit ? this.options.ticks.maxTicksLimit : 11,
-					Math.ceil(this.width / 50));
+				maxTicks = Math.min(this.options.ticks.maxTicksLimit ? this.options.ticks.maxTicksLimit : 11, Math.ceil(this.width / 50));
 			} else {
 				// The factor of 2 used to scale the font size has been experimentally determined.
-				maxTicks = Math.min(this.options.ticks.maxTicksLimit ? this.options.ticks.maxTicksLimit : 11,
-					Math.ceil(this.height / (2 * this.options.ticks.fontSize)));
+				var tickFontSize = helpers.getValueOrDefault(this.options.ticks.fontSize, Chart.defaults.global.defaultFontSize);
+				maxTicks = Math.min(this.options.ticks.maxTicksLimit ? this.options.ticks.maxTicksLimit : 11, Math.ceil(this.height / (2 * tickFontSize)));
 			}
 
 			// Make sure we always have at least 2 ticks
@@ -178,9 +178,9 @@ module.exports = function(Chart) {
 			// for details.
 
 			var spacing;
-			var fixedStepSizeSet = this.options.ticks.fixedStepSize && this.options.ticks.fixedStepSize > 0;
+			var fixedStepSizeSet = (this.options.ticks.fixedStepSize && this.options.ticks.fixedStepSize > 0) || (this.options.ticks.stepSize && this.options.ticks.stepSize > 0);
 			if (fixedStepSizeSet) {
-				spacing = this.options.ticks.fixedStepSize;
+				spacing = helpers.getValueOrDefault(this.options.ticks.fixedStepSize, this.options.ticks.stepSize);
 			} else {
 				var niceRange = helpers.niceNum(this.max - this.min, false);
 				spacing = helpers.niceNum(niceRange / (maxTicks - 1), true);
@@ -222,12 +222,15 @@ module.exports = function(Chart) {
 				this.start = this.min;
 				this.end = this.max;
 			}
-
-			this.ticksAsNumbers = this.ticks.slice(); // do after we potentially reverse the ticks
-			this.zeroLineIndex = this.ticks.indexOf(0);
 		},
 		getLabelForIndex: function(index, datasetIndex) {
 			return +this.getRightValue(this.chart.data.datasets[datasetIndex].data[index]);
+		},
+		convertTicksToLabels: function() {
+			this.ticksAsNumbers = this.ticks.slice();
+			this.zeroLineIndex = this.ticks.indexOf(0);
+
+			Chart.Scale.prototype.convertTicksToLabels.call(this);
 		},
 		// Utils
 		getPixelForValue: function(value, index, datasetIndex, includeOffset) {

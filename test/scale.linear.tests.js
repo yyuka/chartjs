@@ -15,6 +15,7 @@ describe('Linear Scale', function() {
 				color: "rgba(0, 0, 0, 0.1)",
 				drawOnChartArea: true,
 				drawTicks: true, // draw ticks extending towards the label
+				tickMarkLength: 10,
 				lineWidth: 1,
 				offsetGridLines: false,
 				display: true,
@@ -23,27 +24,19 @@ describe('Linear Scale', function() {
 			},
 			position: "left",
 			scaleLabel: {
-				fontColor: '#666',
-				fontFamily: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif",
-				fontSize: 12,
-				fontStyle: 'normal',
 				labelString: '',
 				display: false,
 			},
 			ticks: {
 				beginAtZero: false,
-				fontColor: "#666",
-				fontFamily: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif",
-				fontSize: 12,
-				fontStyle: "normal",
-				maxRotation: 90,
+				maxRotation: 50,
 				mirror: false,
 				padding: 10,
 				reverse: false,
 				display: true,
 				callback: defaultConfig.ticks.callback, // make this work nicer, then check below
 				autoSkip: true,
-				autoSkipPadding: 20
+				autoSkipPadding: 0
 			}
 		});
 
@@ -658,7 +651,6 @@ describe('Linear Scale', function() {
 
 		// Reverse mode makes this count up
 		expect(scale.ticks).toEqual([0, 10, 20, 30, 40, 50, 60, 70, 80]);
-		expect(scale.ticksAsNumbers).toEqual([0, 10, 20, 30, 40, 50, 60, 70, 80]);
 		expect(scale.start).toBe(80);
 		expect(scale.end).toBe(0);
 	});

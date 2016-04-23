@@ -3,9 +3,12 @@ title: Getting started
 anchor: getting-started
 ---
 
-###Download Chart.js
+### Download Chart.js
 
-To download a zip, go to the [Chart.js on Github](https://github.com/nnnick/Chart.js)
+To download a zip, go to [Chart.js on Github](https://github.com/nnnick/Chart.js) and choose the version that is right for your application.
+* [Standard build](https://raw.githubusercontent.com/nnnick/Chart.js/v2.0-dev/dist/Chart.js) (~31kB gzipped)
+* [Bundled with Moment.js](https://raw.githubusercontent.com/nnnick/Chart.js/v2.0-dev/dist/Chart.bundle.js) (~45kB gzipped)
+* [CDN Versions](https://cdnjs.com/libraries/Chart.js)
 
 To install via npm / bower:
 
@@ -16,16 +19,14 @@ npm install chart.js --save
 bower install Chart.js --save
 ```
 
-CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.0.0-beta/Chart.js
-
-###Install Chart.js
+### Installation
 
 To import Chart.js using an old-school script tag:
 
 ```html
 <script src="Chart.js"></script>
 <script>
-	var myChart = new Chart({...})
+    var myChart = new Chart({...})
 </script>
 ```
 
@@ -34,11 +35,11 @@ To import Chart.js using an awesome module loader:
 ```javascript
 
 // Using CommonJS
-var Chart = require('chart.js')
+var Chart = require('src/chart.js')
 var myChart = new Chart({...})
 
 // ES6
-import Chart from 'chart.js'
+import Chart from 'src/chart.js'
 let myChart = new Chart({...})
 
 // Using requirejs
@@ -48,7 +49,7 @@ require(['path/to/Chartjs'], function(Chart){
 
 ```
 
-###Creating a Chart
+### Creating a Chart
 
 To create a chart, we need to instantiate the `Chart` class. To do this, we need to pass in the node, jQuery instance, or 2d context of the canvas of where we want to draw the chart. Here's an example.
 
@@ -72,30 +73,30 @@ The following example instantiates a bar chart showing the number of votes for d
 <script>
 var ctx = document.getElementById("myChart");
 var myChart = new Chart(ctx, {
-		type: 'bar',
-		data: {
-			labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-			datasets: [{
-					label: '# of Votes',
-					data: [12, 19, 3, 5, 2, 3]
-			}]
-		},
-		options:{
-			scales:{
-				yAxes:[{
-						ticks:{
-							beginAtZero:true
-						}
-					}]
-			}
-		}
+    type: 'bar',
+    data: {
+        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+        datasets: [{
+            label: '# of Votes',
+            data: [12, 19, 3, 5, 2, 3]
+        }]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
 });
 </script>
 ```
 
 It's that easy to get started using Chart.js! From here you can explore the many options that can help you customise your charts with scales, tooltips, labels, colors, custom actions, and much more.
 
-###Global chart configuration
+### Global chart configuration
 
 This concept was introduced in Chart.js 1.0 to keep configuration DRY, and allow for changing options globally across chart types, avoiding the need to specify options for each instance, or the default for a particular chart type.
 
@@ -119,7 +120,7 @@ defaultFontColor | Color | '#666' | Default font color for all text
 defaultFontFamily | String | "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif" | Default font family for all text
 defaultFontSize | Number | 12 | Default font size (in px) for text. Does not apply to radialLinear scale point labels
 defaultFontStyle | String | 'normal' | Default font style. Does not apply to tooltip title or footer. Does not apply to chart title
-legendCallback | Function | ` function (chart) { // the chart object to generate a legend from.  }` | Function to generate a legend. Default implementation returns an HTML string.
+legendCallback | Function | ` function (chart) { }` | Function to generate a legend. Receives the chart object to generate a legend from. Default implementation returns an HTML string.
 
 The global options for the chart title is defined in `Chart.defaults.global.title`
 
@@ -150,7 +151,7 @@ labels |-|-|-
 *labels*fontColor | Color | "#666" |
 *labels*fontFamily | String | "Helvetica Neue" |
 *labels*padding | Number | 10 | Padding between rows of colored boxes
-*labels*generateLabels: | Function | `function(data) {  } | Generates legend items for each thing in the legend. Default implementation returns the text + styling for the color box. Styles that can be returned are `fillStyle`, `strokeStyle`, `lineCap`, `lineDash`, `lineDashOffset`, `lineWidth`, `lineJoin`. Return a `hidden` attribute to indicate that the label refers to something that is not visible. A strikethrough style will be given to the text in this case.
+*labels*generateLabels: | Function | `function(data) {  }` | Generates legend items for each thing in the legend. Default implementation returns the text + styling for the color box. Styles that can be returned are `fillStyle`, `strokeStyle`, `lineCap`, `lineDash`, `lineDashOffset`, `lineWidth`, `lineJoin`. Return a `hidden` attribute to indicate that the label refers to something that is not visible. A strikethrough style will be given to the text in this case.
 
 The global options for tooltips are defined in `Chart.defaults.global.tooltips`.
 
@@ -203,8 +204,8 @@ Name | Type | Default | Description
 duration | Number | 1000 | The number of milliseconds an animation takes.
 easing | String | "easeOutQuart" | Easing function to use.
 onProgress | Function | none | Callback called on each step of an animation. Passed a single argument, an object, containing the chart instance and an object with details of the animation.
-onComplete | Function | none | Callback called at the end of an animation. Passed the same arguments as `onProgress
-`
+onComplete | Function | none | Callback called at the end of an animation. Passed the same arguments as `onProgress`
+
 The global options for elements are defined in `Chart.defaults.global.elements`.
 
 Name | Type | Default | Description
@@ -236,6 +237,7 @@ rectangle | - | - | -
 *rectangle*.backgroundColor | Color | `Chart.defaults.global.defaultColor` | Default bar fill color
 *rectangle*.borderWidth | Number | 0 | Default bar stroke width
 *rectangle*.borderColor | Color | `Chart.defaults.global.defaultColor` | Default bar stroke color
+*rectangle*.borderSkipped | String | 'bottom' | Default skipped (excluded) border for rectangle. Can be one of `bottom`, `left`, `top`, `right`
 
 If for example, you wanted all charts created to be responsive, and resize when the browser window does, the following setting can be changed:
 
